@@ -8,7 +8,7 @@ class HasState:
     states = {}
 
     def __init__(self, *args, state=None, **kwargs):
-        super().__init__(*args, *kwargs)
+        super().__init__(*args, **kwargs)
         self._state = None
         self.set_state(state)
 
@@ -41,8 +41,8 @@ class CheckBox(HasState, urwid.SelectableIcon):
         False: ("[ ]", 1),
     }
 
-    def __init__(self, state=False):
-        super().__init__('', state=state)
+    def __init__(self, state=False, **kwargs):
+        super().__init__('', state=state, **kwargs)
 
     def set_state_text(self, state_data):
         text, cursor_position = state_data
@@ -57,6 +57,22 @@ class CheckBox(HasState, urwid.SelectableIcon):
             self.toggle_state()
             return None
         return key
+
+
+class PriorityLabel(HasState, urwid.Text):
+
+    states = {
+        'high': 'a',
+        'medium': 'b',
+        'low': 'c',
+        None: ' ',
+    }
+
+    def __init__(self, state=None, **kwargs):
+        super().__init__('', state=state, **kwargs)
+
+    def set_state_text(self, state_data):
+        self.set_text(state_data)
 
 
 class LostFocusMonitor:
@@ -135,9 +151,8 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
     def sizing(self):
         return frozenset([urwid.FLOW])
 
-    def __init__(self, priority=' ', state=False, label=''):
-        assert priority in 'abc '
-        self.priority = urwid.Text(priority, align='right')
+    def __init__(self, priority=None, state=False, label=''):
+        self.priority = PriorityLabel(priority, align='right')
         self.checkbox = CheckBox(state)
         self.label = FancyCheckBoxEdit('', label, enabled=False)
         super().__init__([
@@ -159,7 +174,12 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
             self.focus_position = 2
             return None
         if not self.label.enabled and key in 'abcd':
-            self.priority.set_text(key if key != 'd' else ' ')
+            self.priority.set_state({
+                'a': 'high',
+                'b': 'medium',
+                'c': 'low',
+                'd': None,
+            }[key])
             return None
         return super().keypress(size, key)
 
