@@ -170,11 +170,15 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
         self.label.on_enter = disable_label
 
     def keypress(self, size, key):
+        if not super().keypress(size, key):
+            return None
+
         if key == 'e':
             self.label.enabled = True
             self.focus_position = 2
             return None
-        if not self.label.enabled and key in 'abcd':
+
+        if key in 'abcd':
             self.priority.set_state({
                 'a': 'high',
                 'b': 'medium',
@@ -182,7 +186,8 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
                 'd': 'none',
             }[key])
             return None
-        return super().keypress(size, key)
+
+        return key
 
 
 class CheckBoxList(LostFocusMonitor, urwid.Pile):
@@ -202,11 +207,10 @@ class CheckBoxList(LostFocusMonitor, urwid.Pile):
             return None
 
         if key == 'n':
-            if not any(c.label.enabled for c, _ in self.contents):
-                checkbox = FancyCheckBox()
-                self.contents.append((checkbox, ('weight', 1)))
-                self.focus_position = len(self.contents) - 1
-                checkbox.keypress(1, 'e')
+            checkbox = FancyCheckBox()
+            self.contents.append((checkbox, ('weight', 1)))
+            self.focus_position = len(self.contents) - 1
+            checkbox.keypress((100, ), 'e')
             return None
 
         return key
