@@ -1,19 +1,14 @@
 import urwid
 
 
-class CheckBox(urwid.SelectableIcon):
-
-    """Minimal version of urwid.CheckBox (no label, no mixed state)."""
+class HasState:
 
     signals = ["change", "postchange"]
 
-    states = {
-        True: ("[x]", 1),
-        False: ("[ ]", 1),
-    }
+    states = {}
 
-    def __init__(self, state=False):
-        super().__init__('')
+    def __init__(self, *args, state=None, **kwargs):
+        super().__init__(*args, *kwargs)
         self._state = None
         self.set_state(state)
 
@@ -28,12 +23,31 @@ class CheckBox(urwid.SelectableIcon):
             self._emit('change', state)
         self._state = state
 
-        text, cursor_position = self.states[state]
-        self.set_text(text)
-        self._cursor_position = cursor_position
+        self.set_state_text(self.states[state])
 
         if do_callback and old_state is not None:
             self._emit('postchange', old_state)
+
+    def set_state_text(self, state_data):
+        raise NotImplementedError
+
+
+class CheckBox(HasState, urwid.SelectableIcon):
+
+    """Minimal version of urwid.CheckBox (no label, no mixed state)."""
+
+    states = {
+        True: ("[x]", 1),
+        False: ("[ ]", 1),
+    }
+
+    def __init__(self, state=False):
+        super().__init__('', state=state)
+
+    def set_state_text(self, state_data):
+        text, cursor_position = state_data
+        self.set_text(text)
+        self._cursor_position = cursor_position
 
     def toggle_state(self):
         self.set_state(not self._state)
