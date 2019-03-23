@@ -1,4 +1,4 @@
-**tasklist** is tool for minimal to do list management.
+**tasklist** is a tool for minimal to do list management.
 
 It supports a workflow for dealing with tactical tasks that need to be done
 today, similar to [The Taste of the Day][totd], or a very stripped down version
