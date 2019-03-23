@@ -184,8 +184,6 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
             return None
         return super().keypress(size, key)
 
-    # TODO: Emit events for priority, state or label changes.
-
 
 class CheckBoxList(LostFocusMonitor, urwid.Pile):
 
@@ -198,6 +196,20 @@ class CheckBoxList(LostFocusMonitor, urwid.Pile):
 
         for widget, _ in new_items:
             urwid.connect_signal(widget.priority, 'change', focus_on_the_next_element)
+
+    def keypress(self, size, key):
+        if not super().keypress(size, key):
+            return None
+
+        if key == 'n':
+            if not any(c.label.enabled for c, _ in self.contents):
+                checkbox = FancyCheckBox()
+                self.contents.append((checkbox, ('weight', 1)))
+                self.focus_position = len(self.contents) - 1
+                checkbox.keypress(1, 'e')
+            return None
+
+        return key
 
 
 if __name__ == '__main__':
