@@ -100,13 +100,26 @@ class LostFocusMonitor:
 
     def _invalidate(self):
         super()._invalidate()
+
+        # self.focus_position raises IndexError if there's no contents.
+        if not self.contents:
+            return
+
         if self._old_focus_position != self.focus_position:
             self._old_focus_position = self.focus_position
 
             # Only the last, non-container widget emits lost_focus.
             widget = self
             while hasattr(widget, 'contents'):
-                widget = widget.contents[widget.focus_position][0]
+
+                # We ignore when containers disappear.
+                # Not sure this is entirely correct.
+                try:
+                    widget_options = widget.contents[widget.focus_position]
+                except IndexError:
+                    return
+                widget, _ = widget_options
+
             urwid.emit_signal(widget, 'lost_focus')
 
 
@@ -192,6 +205,10 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
 
 class CheckBoxList(LostFocusMonitor, urwid.Pile):
 
+    # So we still have focus when there's no child element.
+    def selectable(self):
+        return True
+
     def _contents_modified(self, slc, new_items):
         super()._contents_modified(slc, new_items)
 
@@ -206,11 +223,20 @@ class CheckBoxList(LostFocusMonitor, urwid.Pile):
         if not super().keypress(size, key):
             return None
 
+        # TODO: Emit signals for added/removed items?
+
         if key == 'n':
             checkbox = FancyCheckBox()
             self.contents.append((checkbox, ('weight', 1)))
             self.focus_position = len(self.contents) - 1
             checkbox.keypress((100, ), 'e')
+            return None
+
+        if key == 'r':
+            if self.contents:
+                del self.contents[self.focus_position]
+                if self.contents and self.focus_position > len(self.contents):
+                    self.focus_position = len(self.contents) - 1
             return None
 
         return key
