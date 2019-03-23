@@ -4,8 +4,8 @@ import urwid
 class HasState:
 
     signals = ["change", "postchange"]
-
     states = {}
+    change_to_same_state = False
 
     def __init__(self, *args, state=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -13,7 +13,7 @@ class HasState:
         self.set_state(state)
 
     def set_state(self, state, do_callback=True):
-        if self._state == state:
+        if self._state == state and not self.change_to_same_state:
             return
 
         assert state in self.states, "{!r} invalid state: {!r}".format(self, state)
@@ -65,10 +65,11 @@ class PriorityLabel(HasState, urwid.Text):
         'high': 'a',
         'medium': 'b',
         'low': 'c',
-        None: ' ',
+        'none': ' ',
     }
+    change_to_same_state = True
 
-    def __init__(self, state=None, **kwargs):
+    def __init__(self, state='none', **kwargs):
         super().__init__('', state=state, **kwargs)
 
     def set_state_text(self, state_data):
@@ -151,7 +152,7 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
     def sizing(self):
         return frozenset([urwid.FLOW])
 
-    def __init__(self, priority=None, state=False, label=''):
+    def __init__(self, priority='none', state=False, label=''):
         self.priority = PriorityLabel(priority, align='right')
         self.checkbox = CheckBox(state)
         self.label = FancyCheckBoxEdit('', label, enabled=False)
@@ -178,7 +179,7 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
                 'a': 'high',
                 'b': 'medium',
                 'c': 'low',
-                'd': None,
+                'd': 'none',
             }[key])
             return None
         return super().keypress(size, key)
@@ -186,7 +187,17 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
     # TODO: Emit events for priority, state or label changes.
 
 
-class LostFocusPile(LostFocusMonitor, urwid.Pile): pass
+class CheckBoxList(LostFocusMonitor, urwid.Pile):
+
+    def _contents_modified(self, slc, new_items):
+        super()._contents_modified(slc, new_items)
+
+        def focus_on_the_next_element(_, __):
+            if self.focus_position < len(self.contents) - 1:
+                self.focus_position += 1
+
+        for widget, _ in new_items:
+            urwid.connect_signal(widget.priority, 'change', focus_on_the_next_element)
 
 
 if __name__ == '__main__':
@@ -198,7 +209,7 @@ if __name__ == '__main__':
         for _ in range(20)
     ]
 
-    pile = LostFocusPile([FancyCheckBox(label=label) for label in labels])
+    pile = CheckBoxList([FancyCheckBox(label=label) for label in labels])
     fill = urwid.Filler(pile, 'top')
 
     def exit_on_q(key):
