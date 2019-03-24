@@ -1,5 +1,7 @@
 import urwid
 
+from .types import Item
+
 
 class HasState:
 
@@ -11,6 +13,10 @@ class HasState:
         super().__init__(*args, **kwargs)
         self._state = None
         self.set_state(state)
+
+    @property
+    def state(self):
+        return self._state
 
     def set_state(self, state, do_callback=True):
         if self._state == state and not self.change_to_same_state:
@@ -62,14 +68,14 @@ class CheckBox(HasState, urwid.SelectableIcon):
 class PriorityLabel(HasState, urwid.Text):
 
     states = {
-        'high': 'a',
-        'medium': 'b',
-        'low': 'c',
-        'none': ' ',
+        'a': 'a',
+        'b': 'b',
+        'c': 'c',
+        '': ' ',
     }
     change_to_same_state = True
 
-    def __init__(self, state='none', **kwargs):
+    def __init__(self, state='', **kwargs):
         super().__init__('', state=state, **kwargs)
 
     def set_state_text(self, state_data):
@@ -165,7 +171,7 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
     def sizing(self):
         return frozenset([urwid.FLOW])
 
-    def __init__(self, priority='none', state=False, label=''):
+    def __init__(self, priority='', state=False, label=''):
         self.priority = PriorityLabel(priority, align='right')
         self.checkbox = CheckBox(state)
         self.label = FancyCheckBoxEdit('', label, enabled=False)
@@ -193,10 +199,10 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
 
         if key in 'abcd':
             self.priority.set_state({
-                'a': 'high',
-                'b': 'medium',
-                'c': 'low',
-                'd': 'none',
+                'a': 'a',
+                'b': 'b',
+                'c': 'c',
+                'd': '',
             }[key])
             return None
 
@@ -242,16 +248,15 @@ class CheckBoxList(LostFocusMonitor, urwid.Pile):
         return key
 
 
-if __name__ == '__main__':
-
-    from jinja2.utils import generate_lorem_ipsum
-
-    labels = [
-        generate_lorem_ipsum(n=1, html=False, min=1, max=9)
-        for _ in range(20)
-    ]
-
-    pile = CheckBoxList([FancyCheckBox(label=label) for label in labels])
+def edit(items):
+    pile = CheckBoxList([
+            FancyCheckBox(
+                state=item.checked,
+                priority=item.priority,
+                label=item.text,
+            )
+            for item in items
+        ])
     fill = urwid.Filler(pile, 'top')
 
     def exit_on_q(key):
@@ -260,4 +265,23 @@ if __name__ == '__main__':
 
     loop = urwid.MainLoop(fill, unhandled_input=exit_on_q)
     loop.run()
+
+    return [
+        Item(fcb.label.get_edit_text(), fcb.checkbox.state, fcb.priority.state)
+        for fcb, _ in pile.contents
+    ]
+
+
+if __name__ == '__main__':
+
+    from jinja2.utils import generate_lorem_ipsum
+
+    items = [
+        Item(generate_lorem_ipsum(n=1, html=False, min=1, max=9), False, '')
+        for _ in range(20)
+    ]
+    items = edit(items)
+    for i in items:
+        print(i)
+
 
