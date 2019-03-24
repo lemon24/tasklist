@@ -1,11 +1,8 @@
 import re
 import io
-from collections import namedtuple, Counter
+from collections import Counter
 
-
-Heading = namedtuple('Heading', 'text level')
-Item = namedtuple('Item', 'text checked priority')
-Block = namedtuple('Block', 'heading items')
+from .types import Block, Heading, Item
 
 
 class ParseError(Exception):

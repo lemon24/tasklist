@@ -1,6 +1,7 @@
 import pytest
 
-from parser import Heading, Item, Block, ParseError, parse
+from tasklist.types import Heading, Item, Block
+from tasklist.parser import ParseError, parse
 
 
 data = [
