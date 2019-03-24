@@ -63,7 +63,7 @@ class Parser:
         return Item(
             match.group('text'),
             bool(checked),
-            {'': 'none', 'a': 'high', 'b': 'medium', 'c': 'low'}[priority],
+            priority,
         )
 
     def parse_into_values(self, lines):

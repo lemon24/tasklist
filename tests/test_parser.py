@@ -26,19 +26,19 @@ data = [
         '# one\n- []()two', '# one\n- [] ()two', '# one\n- []() two',
         '# one\n- [] () two', '# one\n- [ ] ( ) two',
         '# one\n- [  ] (  ) two', '# one\n-  [  ]  (  )  two',
-        [Block(Heading('one', 1), [Item('two', False, 'none')])]),
+        [Block(Heading('one', 1), [Item('two', False, '')])]),
 
     ('# one\n- [x] two', '# one\n- [X] two', '# one\n- [ x ]two',
-        [Block(Heading('one', 1), [Item('two', True, 'none')])]),
+        [Block(Heading('one', 1), [Item('two', True, '')])]),
 
     ('# one\n- (a) two', '# one\n- (A) two', '# one\n- ( a )two',
-        [Block(Heading('one', 1), [Item('two', False, 'high')])]),
+        [Block(Heading('one', 1), [Item('two', False, 'a')])]),
 
     ('# one\n- (b) two', '# one\n- (B) two',
-        [Block(Heading('one', 1), [Item('two', False, 'medium')])]),
+        [Block(Heading('one', 1), [Item('two', False, 'b')])]),
 
     ('# one\n- (c) two', '# one\n- (C) two',
-        [Block(Heading('one', 1), [Item('two', False, 'low')])]),
+        [Block(Heading('one', 1), [Item('two', False, 'c')])]),
 
 ]
 data = [(i, line[-1]) for line in data for i in line[:-1]]
