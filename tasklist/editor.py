@@ -7,11 +7,12 @@ class HasState:
 
     signals = ["change", "postchange"]
     states = {}
+    default_state = None
     change_to_same_state = False
 
     def __init__(self, *args, state=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self._state = None
+        self._state = state if state is not None else self.default_state
         self.set_state(state)
 
     @property
@@ -38,45 +39,37 @@ class HasState:
         raise NotImplementedError
 
 
-class CheckBox(HasState, urwid.SelectableIcon):
-
-    """Minimal version of urwid.CheckBox (no label, no mixed state)."""
+class CheckBox(HasState, urwid.Text):
 
     states = {
-        True: ("[x]", 1),
-        False: ("[ ]", 1),
+        True: '[x]',
+        False: '',
     }
+    default_state = False
 
-    def __init__(self, state=False, **kwargs):
-        super().__init__('', state=state, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__('', *args, **kwargs)
 
     def set_state_text(self, state_data):
-        text, cursor_position = state_data
-        self.set_text(text)
-        self._cursor_position = cursor_position
+        self.set_text(state_data)
 
     def toggle_state(self):
         self.set_state(not self._state)
-
-    def keypress(self, size, key):
-        if self._command_map[key] == urwid.ACTIVATE or key == 'x':
-            self.toggle_state()
-            return None
-        return key
 
 
 class PriorityLabel(HasState, urwid.Text):
 
     states = {
-        'a': 'a',
-        'b': 'b',
-        'c': 'c',
-        '': ' ',
+        'a': '(a)',
+        'b': '(b)',
+        'c': '(c)',
+        '': '',
     }
+    default_state = ''
     change_to_same_state = True
 
-    def __init__(self, state='', **kwargs):
-        super().__init__('', state=state, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__('', *args, **kwargs)
 
     def set_state_text(self, state_data):
         self.set_text(state_data)
@@ -172,18 +165,20 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
         return frozenset([urwid.FLOW])
 
     def __init__(self, priority='', state=False, label=''):
-        self.priority = PriorityLabel(priority, align='right')
-        self.checkbox = CheckBox(state)
+        self.bullet = urwid.SelectableIcon('-', 0)
+        self.priority = PriorityLabel(state=priority)
+        self.checkbox = CheckBox(state=state)
         self.label = FancyCheckBoxEdit('', label, enabled=False)
         super().__init__([
-            (2, self.priority),
-            (4, self.checkbox),
+            ('pack', self.bullet),
+            ('pack', self.checkbox),
+            ('pack', self.priority),
             self.label,
-        ])
+        ], dividechars=1)
 
         def disable_label():
             self.label.enabled = False
-            self.focus_position = 1
+            self.focus_position = 0
 
         urwid.connect_signal(self.label, 'lost_focus', disable_label)
         self.label.on_enter = disable_label
@@ -192,9 +187,14 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
         if not super().keypress(size, key):
             return None
 
+        if key == 'x':
+            self.checkbox.toggle_state()
+            self._invalidate()
+            return None
+
         if key == 'e':
             self.label.enabled = True
-            self.focus_position = 2
+            self.focus_position = 3
             return None
 
         if key in 'abcd':
@@ -204,6 +204,7 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
                 'c': 'c',
                 'd': '',
             }[key])
+            self._invalidate()
             return None
 
         return key
