@@ -1,6 +1,6 @@
 import urwid
 
-from .types import Item
+from .types import Item, Heading
 
 
 class HasState:
@@ -249,15 +249,21 @@ class CheckBoxList(LostFocusMonitor, urwid.Pile):
         return key
 
 
-def edit(items):
-    pile = CheckBoxList([
-            FancyCheckBox(
-                state=item.checked,
-                priority=item.priority,
-                label=item.text,
-            )
-            for item in items
-        ])
+def edit(items, heading):
+    checkboxlist = CheckBoxList([
+        FancyCheckBox(
+            state=item.checked,
+            priority=item.priority,
+            label=item.text,
+        )
+        for item in items
+    ])
+
+    pile = urwid.Pile([
+        urwid.Text('{} {}\n'.format('#' * heading.level, heading.text)),
+        checkboxlist,
+    ])
+
     fill = urwid.Filler(pile, 'top')
 
     def exit_on_q(key):
@@ -269,7 +275,7 @@ def edit(items):
 
     return [
         Item(fcb.label.get_edit_text(), fcb.checkbox.state, fcb.priority.state)
-        for fcb, _ in pile.contents
+        for fcb, _ in checkboxlist.contents
     ]
 
 
@@ -281,7 +287,7 @@ if __name__ == '__main__':
         Item(generate_lorem_ipsum(n=1, html=False, min=1, max=9), False, '')
         for _ in range(20)
     ]
-    items = edit(items)
+    items = edit(items, Heading('Lorem Ipsum', 1))
     for i in items:
         print(i)
 

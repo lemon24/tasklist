@@ -23,7 +23,7 @@ def main(file, name):
         block = Block(Heading(name, 1), [])
         blocks.append(block)
 
-    items = edit(list(block.items))
+    items = edit(list(block.items), block.heading)
     block.items[:] = items
 
     render(blocks, file)
