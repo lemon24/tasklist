@@ -31,6 +31,7 @@ class HasState:
         self._state = state
 
         self.set_state_text(self.states[state])
+        self._invalidate()
 
         if do_callback and old_state is not None:
             self._emit('postchange', old_state)
