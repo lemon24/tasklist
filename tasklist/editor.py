@@ -213,6 +213,14 @@ class FancyCheckBox(LostFocusMonitor, urwid.Columns):
 
 class CheckBoxList(LostFocusMonitor, urwid.Pile):
 
+    def __init__(self, *args, move_key=None, move_target=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        assert (move_key is None) + (move_target is None) != 1, (
+            "either none or both of move_key and move_target must be given")
+        self.move_key = move_key
+        self.move_target = move_target
+
+
     # So we still have focus when there's no child element.
     def selectable(self):
         return True
@@ -247,18 +255,32 @@ class CheckBoxList(LostFocusMonitor, urwid.Pile):
                     self.focus_position = len(self.contents) - 1
             return None
 
+        if self.move_key and key == self.move_key:
+            if self.contents:
+                self.move_target.append(self.contents[self.focus_position])
+                del self.contents[self.focus_position]
+                if self.contents and self.focus_position > len(self.contents):
+                    self.focus_position = len(self.contents) - 1
+            return None
+
         return key
 
 
-def edit(items, heading):
-    checkboxlist = CheckBoxList([
-        FancyCheckBox(
-            state=item.checked,
-            priority=item.priority,
-            label=item.text,
-        )
-        for item in items
-    ])
+def edit(items, heading, move_key=None):
+    move_target = []
+
+    checkboxlist = CheckBoxList(
+        [
+            FancyCheckBox(
+                state=item.checked,
+                priority=item.priority,
+                label=item.text,
+            )
+            for item in items
+        ],
+        move_key=move_key,
+        move_target=move_target if move_key else None,
+    )
 
     pile = urwid.Pile([
         urwid.Text('{} {}\n'.format('#' * heading.level, heading.text)),
@@ -274,10 +296,17 @@ def edit(items, heading):
     loop = urwid.MainLoop(fill, unhandled_input=exit_on_q)
     loop.run()
 
-    return [
-        Item(fcb.label.get_edit_text(), fcb.checkbox.state, fcb.priority.state)
-        for fcb, _ in checkboxlist.contents
-    ]
+    def fancy_check_box_list_to_items(l):
+        return [
+            Item(fcb.label.get_edit_text(), fcb.checkbox.state, fcb.priority.state)
+            for fcb, _ in l
+        ]
+
+    return (
+        fancy_check_box_list_to_items(checkboxlist.contents),
+        fancy_check_box_list_to_items(move_target),
+    )
+
 
 
 if __name__ == '__main__':

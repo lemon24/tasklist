@@ -26,11 +26,14 @@ def process_file(processors, file):
 
 @cli.command()
 @click.argument('name')
-def edit(name):
+@click.option('--bind-move', nargs=2, metavar='KEY NAME')
+def edit(name, bind_move):
     from .editor import edit
     from .types import Block, Heading
 
     def processor(blocks):
+        move_key, move_target = bind_move if bind_move else (None, None)
+
         blocks_by_name = {b.heading.text: b for b in blocks}
         block = blocks_by_name.get(name)
 
@@ -38,8 +41,15 @@ def edit(name):
             block = Block(Heading(name, 1), [])
             blocks.append(block)
 
-        items = edit(list(block.items), block.heading)
+        items, moved_items = edit(list(block.items), block.heading, move_key=move_key)
         block.items[:] = items
+
+        if move_key and moved_items:
+            move_target_block = blocks_by_name.get(move_target)
+            if not move_target_block:
+                move_target_block = Block(Heading(move_target, 1), [])
+                blocks.append(move_target_block)
+            move_target_block.items.extend(moved_items)
 
     return processor
 
